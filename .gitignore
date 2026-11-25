@@ -1,0 +1,66 @@
+# Pixi environment
+/.pixi/
+
+# Private environment and tool configuration
+/.home/
+
+# Downloaded dependencies and toolchains
+/workspace/
+/sdk/
+/strucpp/node_modules/
+
+# Package and compiler caches
+/cache/
+.ccache/
+.cache/
+
+# Generated build artifacts
+/build/
+/dist/
+/tmp/
+*.obj
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+
+# Node.js
+npm-debug.log*
+node_modules/
+
+# IDE configuration
+.idea/
+.vscode/
+*.iml
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Temporary and backup files
+*.tmp
+*.bak
+*.swp
+*~
+/workspace.backup/
+/workspace.old/
+
+# Local development reports
+/codex_result.txt
