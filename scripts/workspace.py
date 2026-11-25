@@ -1,3 +1,5 @@
+import json
+import subprocess
 import os
 import sys
 from pathlib import Path
@@ -5,7 +7,7 @@ from pathlib import Path
 from west.configuration import Configuration, ConfigFile
 from west.util import west_topdir
 
-from environment import WEST_ROOT, WORKSPACE, MANIFEST, CONFIG, SDK, ZEPHYR, run
+from environment import WEST_ROOT, WORKSPACE, MANIFEST, CONFIG, SDK, ZEPHYR, run, managed_env
 
 EXPECTED = {"manifest.path": "west_manifest", "manifest.file": "west.yml"}
 
@@ -54,7 +56,7 @@ def verify_workspace():
     for key, expected in EXPECTED.items():
         if config.get(key, configfile=ConfigFile.LOCAL) != expected:
             raise RuntimeError(f"Unexpected {key}; expected {expected}")
-    print(f"Verified workspace: {WEST_ROOT}")
+    # print(f"Verified workspace: {WEST_ROOT}", file=sys.stderr)
 
 
 def update_modules():
@@ -84,12 +86,61 @@ def verify_sdk():
     if not compiler.is_file() or not compiler.resolve().is_relative_to(SDK.resolve()):
         raise RuntimeError("Local ARM compiler missing")
     run(compiler, "--version")
-    print(f"Verified SDK {installed}: {SDK}")
+    print(f"Verified SDK {installed}: {SDK}", file=sys.stderr)
+
+
+def emit(event, **fields):
+    print(json.dumps({"event": event, **fields}), flush=True)
+
+
+def plc_command(args):
+    command = args[0]
+    device = command in {"plc-upload", "plc-verify", "plc-debug"}
+    terminal = False
+    try:
+        verify_workspace()
+        with subprocess.Popen(["west", *args], cwd=WEST_ROOT,
+                              env=managed_env(), text=True,
+                              stdout=subprocess.PIPE if device else sys.stderr) as process:
+            try:
+                if device:
+                    for line in process.stdout:
+                        try:
+                            record = json.loads(line)
+                            if not isinstance(record, dict):
+                                raise ValueError("Expected JSON object")
+                        except ValueError:
+                            print(line, end="", file=sys.stderr, flush=True)
+                            continue
+                        print(json.dumps(record), flush=True)
+                        terminal = record.get("event") in {"result", "error"}
+                status = process.wait()
+            except KeyboardInterrupt:
+                process.terminate()
+                process.wait()
+                raise
+        if status:
+            if not terminal:
+                emit("error", success=False, command=command, code="west_failed",
+                     message="West command failed; see stderr for details", exit_code=status)
+            raise SystemExit(status if status > 0 else 128 - status)
+        if not terminal:
+            emit("result", success=True, command=command, status="completed")
+    except KeyboardInterrupt:
+        emit("error", success=False, command=command, code="interrupted", message="Interrupted")
+        raise SystemExit(130) from None
+    except Exception as exc:
+        emit("error", success=False, command=command, code="execution_failed", message=str(exc))
+        raise SystemExit(1) from None
 
 
 def west_command():
+    args = sys.argv[2:]
+    if args and args[0].startswith("plc-") and not any(a in {"-h", "--help"} for a in args):
+        plc_command(args)
+        return
     verify_workspace()
-    run("west", *sys.argv[2:])
+    run("west", *args)
 
 
 COMMANDS = {
@@ -108,4 +159,7 @@ if __name__ == "__main__":
             "Available commands: " + ", ".join(COMMANDS)
         )
 
-    COMMANDS[sys.argv[1]]()
+    try:
+        COMMANDS[sys.argv[1]]()
+    except subprocess.CalledProcessError as exc:
+        raise SystemExit(exc.returncode) from None

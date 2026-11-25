@@ -103,3 +103,6 @@ tar = ">=1.35,<2"
 which = ">=2.25,<3"
 bash = ">=5.3,<6"
 xz = ">=5.8.3,<6"
+
+[pypi-dependencies]
+mcumgr-toolkit = "==0.20.0"

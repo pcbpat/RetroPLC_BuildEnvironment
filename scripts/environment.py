@@ -14,7 +14,7 @@ SDK = ROOT / "sdk"
 HOME = ROOT / ".home"
 
 
-def run(*args, capture=False):
+def managed_env():
     HOME.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     # Keep HOME private only for managed subprocesses, not the Pixi shell.
@@ -31,5 +31,9 @@ def run(*args, capture=False):
             raise RuntimeError(f"Invalid {key}: {env.get(key)!r}; expected {expected}")
     if not ZEPHYR.is_dir():
         env.pop("ZEPHYR_BASE", None)
+    return env
+
+
+def run(*args, capture=False):
     return subprocess.run([str(arg) for arg in args], cwd=WEST_ROOT,
-                          env=env, check=True, text=True, capture_output=capture)
+                          env=managed_env(), check=True, text=True, capture_output=capture)
