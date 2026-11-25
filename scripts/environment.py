@@ -4,11 +4,11 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(os.environ["PIXI_PROJECT_ROOT"]).resolve()
+WEST_ROOT = ROOT
 WORKSPACE = ROOT / "workspace"
 RUNTIME = WORKSPACE / "retroplc-runtime"
-MANIFEST_SOURCE = ROOT / "west_manifest"
-MANIFEST = WORKSPACE / "manifest"
-CONFIG = WORKSPACE / ".west/config"
+MANIFEST = ROOT / "west_manifest"
+CONFIG = WEST_ROOT / ".west/config"
 ZEPHYR = WORKSPACE / "zephyr"
 SDK = ROOT / "sdk"
 HOME = ROOT / ".home"
@@ -31,5 +31,5 @@ def run(*args, capture=False):
             raise RuntimeError(f"Invalid {key}: {env.get(key)!r}; expected {expected}")
     if not ZEPHYR.is_dir():
         env.pop("ZEPHYR_BASE", None)
-    return subprocess.run([str(arg) for arg in args], cwd=WORKSPACE,
+    return subprocess.run([str(arg) for arg in args], cwd=WEST_ROOT,
                           env=env, check=True, text=True, capture_output=capture)

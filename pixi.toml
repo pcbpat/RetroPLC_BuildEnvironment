@@ -14,7 +14,7 @@ GIT_CONFIG_NOSYSTEM = "1"
 GIT_CONFIG_GLOBAL = "$PIXI_PROJECT_ROOT/.home/.gitconfig"
 WEST_CONFIG_SYSTEM = "$PIXI_PROJECT_ROOT/.home/west-system.ini"
 WEST_CONFIG_GLOBAL = "$PIXI_PROJECT_ROOT/.home/west-global.ini"
-WEST_CONFIG_LOCAL = "$PIXI_PROJECT_ROOT/workspace/.west/config"
+WEST_CONFIG_LOCAL = "$PIXI_PROJECT_ROOT/.west/config"
 STRUCPP_HOME = "$PIXI_PROJECT_ROOT/strucpp"
 NPM_CONFIG_CACHE = "$PIXI_PROJECT_ROOT/cache/npm"
 
@@ -23,9 +23,8 @@ verify-workspace = "python scripts/workspace.py verify"
 west = "python scripts/workspace.py west"
 
 sdk-list = "python scripts/workspace.py west sdk list"
-sdk-install = "python scripts/workspace.py sdk-install"
 sdk-verify = "python scripts/workspace.py sdk-verify"
-build-runtime = "python scripts/workspace.py west build -p always --sysbuild -b arduino_opta/stm32h747xx/m7 -s retroplc-runtime/app -d ../build/runtime"
+build-runtime = "python scripts/workspace.py west build -p always --sysbuild -b arduino_opta/stm32h747xx/m7 -s workspace/retroplc-runtime/app -d build/runtime"
 
 [tasks.init-workspace]
 cmd = "python scripts/workspace.py init"
@@ -36,6 +35,10 @@ depends-on = ["init-workspace"]
 
 [tasks.setup-workspace]
 depends-on = ["update-modules"]
+
+[tasks.sdk-install]
+cmd = "python scripts/workspace.py sdk-install"
+depends-on = ["setup-workspace"]
 
 [tasks.setup-sdk]
 depends-on = ["sdk-install", "sdk-verify"]

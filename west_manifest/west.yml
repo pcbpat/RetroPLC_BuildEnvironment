@@ -3,8 +3,8 @@ manifest:
     - name: retroplc-runtime
       url: https://github.com/pcbpat/RetroPLC_Runtime.git
       revision: main
-      path: retroplc-runtime
-      import: true
+      import:
+        path-prefix: workspace
   self:
-    path: manifest
+    path: west_manifest
     west-commands: west-commands.yml

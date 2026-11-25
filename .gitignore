@@ -3,6 +3,7 @@
 
 # Private environment and tool configuration
 /.home/
+/.west/
 
 # Downloaded dependencies and toolchains
 /workspace/

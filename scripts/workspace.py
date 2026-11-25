@@ -1,64 +1,60 @@
+import os
 import sys
 from pathlib import Path
-from configparser import ConfigParser
-from shutil import copytree
 
-from environment import WORKSPACE, MANIFEST_SOURCE, MANIFEST, CONFIG, SDK, ZEPHYR, run
+from west.configuration import Configuration, ConfigFile
+from west.util import west_topdir
+
+from environment import WEST_ROOT, WORKSPACE, MANIFEST, CONFIG, SDK, ZEPHYR, run
+
+EXPECTED = {"manifest.path": "west_manifest", "manifest.file": "west.yml"}
+
+
+def local_configuration():
+    # WEST_CONFIG_LOCAL overrides topdir in West; validate before accessing it.
+    for key, expected in {
+        "WEST_CONFIG_LOCAL": CONFIG,
+        "WEST_CONFIG_SYSTEM": WEST_ROOT / ".home/west-system.ini",
+        "WEST_CONFIG_GLOBAL": WEST_ROOT / ".home/west-global.ini",
+    }.items():
+        if os.environ.get(key) != str(expected):
+            raise RuntimeError(f"Invalid {key}; expected {expected}")
+    if CONFIG.is_symlink() or CONFIG.parent.is_symlink():
+        raise RuntimeError("Refusing symlinked West configuration")
+    return Configuration(topdir=WEST_ROOT)
+
 
 def init_workspace():
-    if not (MANIFEST_SOURCE / "west.yml").is_file():
-        raise RuntimeError(f"Parent manifest missing: {MANIFEST_SOURCE / 'west.yml'}")
-    if not (MANIFEST_SOURCE / "west-commands.yml").is_file():
-        raise RuntimeError(f"Extension descriptor missing: {MANIFEST_SOURCE / 'west-commands.yml'}")
+    for name in ("west.yml", "west-commands.yml"):
+        if not (MANIFEST / name).is_file():
+            raise RuntimeError(f"Manifest source missing: {MANIFEST / name}")
+    if (WORKSPACE / ".west").exists():
+        raise RuntimeError("Old workspace metadata detected. Move workspace to a backup before provisioning.")
 
-    # Refuse to silently convert the old Runtime-owned workspace.
-    config = ConfigParser(interpolation=None)
+    config = local_configuration()
     if CONFIG.exists():
-        config.read(CONFIG, encoding="utf-8")
-        if config.get("manifest", "path", fallback="") != "manifest":
-            raise RuntimeError("Old workspace detected. Move workspace to a backup before provisioning.")
-        if config.get("manifest", "file", fallback="west.yml") != "west.yml":
-            raise RuntimeError("Unexpected manifest file in existing workspace")
-
-    copytree(MANIFEST_SOURCE, MANIFEST, dirs_exist_ok=True,
-             ignore=lambda path, names: {name for name in names
-                                         if name in {"__pycache__", ".git"}})
-    CONFIG.parent.mkdir(parents=True, exist_ok=True)
-    if not CONFIG.exists():
-        CONFIG.write_text(
-            "[manifest]\n"
-            "path = manifest\n"
-            "file = west.yml\n",
-            encoding="utf-8",
-        )
+        for key, expected in EXPECTED.items():
+            actual = config.get(key, configfile=ConfigFile.LOCAL)
+            if actual not in (None, expected):
+                raise RuntimeError(f"Unexpected {key}: {actual!r}; refusing to overwrite")
+    for key, expected in EXPECTED.items():
+        config.set(key, expected, configfile=ConfigFile.LOCAL)
+    verify_workspace()
 
 
 def verify_workspace():
     if not CONFIG.is_file():
-        raise RuntimeError("Local West configuration missing")
-
-    actual = Path(
-        run("west", "topdir", capture=True).stdout.strip()
-    ).resolve()
-
-    if actual != WORKSPACE:
+        raise RuntimeError("Local West configuration missing; run pixi run init-workspace")
+    if (WORKSPACE / ".west").exists():
+        raise RuntimeError("Old nested workspace metadata detected; move workspace to a backup")
+    config = local_configuration()
+    actual = Path(west_topdir(start=WEST_ROOT, fall_back=False)).resolve()
+    if actual != WEST_ROOT:
         raise RuntimeError(f"Unexpected workspace: {actual}")
-
-    manifest_path = run(
-        "west", "config", "manifest.path", capture=True
-    ).stdout.strip()
-
-    manifest_file = run(
-        "west", "config", "manifest.file", capture=True
-    ).stdout.strip()
-
-    if manifest_path != "manifest":
-        raise RuntimeError("Unexpected manifest path")
-
-    if manifest_file != "west.yml":
-        raise RuntimeError("Unexpected manifest file")
-
-    print(f"Verified workspace: {WORKSPACE}")
+    for key, expected in EXPECTED.items():
+        if config.get(key, configfile=ConfigFile.LOCAL) != expected:
+            raise RuntimeError(f"Unexpected {key}; expected {expected}")
+    print(f"Verified workspace: {WEST_ROOT}")
 
 
 def update_modules():
