@@ -1,0 +1,102 @@
+[workspace]
+authors = ["Patrick Strouhal <patrick.strouhal@protonmail.com>"]
+channels = ['conda-forge']
+name = "pixi_test"
+platforms = ['linux-64']
+version = "0.1.0"
+
+[activation.env]
+ZEPHYR_TOOLCHAIN_VARIANT = "zephyr"
+ZEPHYR_SDK_INSTALL_DIR = "$PIXI_PROJECT_ROOT/sdk"
+ZEPHYR_BASE = "$PIXI_PROJECT_ROOT/workspace/zephyr"
+PYTHONNOUSERSITE = "1"
+GIT_CONFIG_NOSYSTEM = "1"
+GIT_CONFIG_GLOBAL = "$PIXI_PROJECT_ROOT/.home/.gitconfig"
+WEST_CONFIG_SYSTEM = "$PIXI_PROJECT_ROOT/.home/west-system.ini"
+WEST_CONFIG_GLOBAL = "$PIXI_PROJECT_ROOT/.home/west-global.ini"
+WEST_CONFIG_LOCAL = "$PIXI_PROJECT_ROOT/workspace/.west/config"
+STRUCPP_HOME = "$PIXI_PROJECT_ROOT/strucpp"
+NPM_CONFIG_CACHE = "$PIXI_PROJECT_ROOT/cache/npm"
+
+[tasks]
+verify-workspace = "python scripts/workspace.py verify"
+west = "python scripts/workspace.py west"
+
+sdk-list = "python scripts/workspace.py west sdk list"
+sdk-install = "python scripts/workspace.py sdk-install"
+sdk-verify = "python scripts/workspace.py sdk-verify"
+build-runtime = "python scripts/workspace.py west build -p always --sysbuild -b arduino_opta/stm32h747xx/m7 -s retroplc-runtime/app -d ../build/runtime"
+
+[tasks.init-workspace]
+cmd = "python scripts/workspace.py init"
+
+[tasks.update-modules]
+cmd = "python scripts/workspace.py update"
+depends-on = ["init-workspace"]
+
+[tasks.setup-workspace]
+depends-on = ["update-modules"]
+
+[tasks.setup-sdk]
+depends-on = ["sdk-install", "sdk-verify"]
+
+[tasks.setup-zephyr]
+depends-on = ["setup-workspace", "setup-sdk"]
+
+[tasks.setup-strucpp]
+cmd = "npm ci"
+cwd = "strucpp"
+
+[tasks.strucpp]
+cmd = "node node_modules/strucpp/dist/node/cli.js"
+cwd = "strucpp"
+
+[tasks.strucpp-debug]
+cmd = "node generate-strucpp-debug.mjs"
+cwd = "strucpp"
+
+[tasks.strucpp-lsp]
+cmd = "node language-server.mjs"
+cwd = "strucpp"
+
+[tasks.verify-strucpp]
+cmd = "node node_modules/strucpp/dist/node/cli.js --version"
+cwd = "strucpp"
+depends-on = ["setup-strucpp"]
+
+[tasks.setup]
+depends-on = ["setup-zephyr", "setup-strucpp", "verify-strucpp"]
+
+[dependencies]
+python = "3.12.*"
+nodejs = "22.*"
+git = ">=2.56.1,<3"
+cmake = ">=4.5.1,<5"
+ninja = ">=1.13.2,<2"
+gperf = ">=3.3,<4"
+pip = ">=26.2.2,<27"
+west = ">=1.5.0,<2"
+ccache = ">=4.14.3,<5"
+make = ">=4.4.1,<5"
+dtc = ">=1.7.2,<2"
+pyelftools = ">=0.33,<0.34"
+pyyaml = ">=6.0.3,<7"
+pykwalify = ">=1.8.0,<2"
+jsonschema = ">=4.26.0,<5"
+packaging = ">=26.4,<27"
+patool = ">=4.1.0,<5"
+psutil = ">=7.2.2,<8"
+pyserial = ">=3.5,<4"
+requests = ">=2.34.2,<3"
+semver = ">=3.1.2,<4"
+tqdm = ">=4.70.1,<5"
+anytree = ">=2.13.0,<3"
+intelhex = ">=2.3.0,<3"
+cryptography = ">=50.0.2,<51"
+cbor2 = ">=6.3.0,<7"
+click = ">=8.5.1,<9"
+wget = ">=1.21.4,<2"
+tar = ">=1.35,<2"
+which = ">=2.25,<3"
+bash = ">=5.3,<6"
+xz = ">=5.8.3,<6"

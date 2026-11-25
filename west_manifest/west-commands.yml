@@ -1,0 +1,11 @@
+west-commands:
+  - file: west_commands/plc_transpile.py
+    commands:
+      - name: plc-transpile
+        class: PlcTranspile
+        help: Transpile a RetroPLC project
+  - file: west_commands/plc_build.py
+    commands:
+      - name: plc-build
+        class: PlcBuild
+        help: Build a RetroPLC project

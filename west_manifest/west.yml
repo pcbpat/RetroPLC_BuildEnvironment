@@ -1,0 +1,10 @@
+manifest:
+  projects:
+    - name: retroplc-runtime
+      url: https://github.com/pcbpat/RetroPLC_Runtime.git
+      revision: main
+      path: retroplc-runtime
+      import: true
+  self:
+    path: manifest
+    west-commands: west-commands.yml
