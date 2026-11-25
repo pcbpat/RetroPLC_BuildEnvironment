@@ -4,24 +4,33 @@ west-commands:
       - name: plc-transpile
         class: PlcTranspile
         help: Transpile a RetroPLC project
+
   - file: west_commands/plc_build.py
     commands:
       - name: plc-build
         class: PlcBuild
-        help: Build a RetroPLC project
+        help: Build a RetroPLC project incrementally
+
+      - name: plc-rebuild
+        class: PlcRebuild
+        help: Perform a pristine RetroPLC build
+
   - file: west_commands/plc_clean.py
     commands:
       - name: plc-clean
         class: PlcClean
         help: Clean PLC build outputs
+
   - file: west_commands/plc_device.py
     commands:
       - name: plc-upload
         class: PlcUpload
         help: Upload PLC firmware
+
       - name: plc-verify
         class: PlcVerify
         help: Verify running PLC firmware
+
       - name: plc-debug
         class: PlcDebug
         help: Read symbolic PLC variables
